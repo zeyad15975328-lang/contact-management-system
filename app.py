@@ -59,17 +59,27 @@ elif choice == "Edit a Contact":
     if not st.session_state.contacts:
         st.info("No contacts available to edit.")
     else:
-        # Improved Dropdown: displays both Name and ID dynamically using format_func
-        contact = st.selectbox(
+        # FIX 1: Extract IDs as stable options for the dropdown
+        contact_ids = [c["ID"] for c in st.session_state.contacts]
+        
+        # Helper function to dynamically display the name alongside the ID
+        def get_contact_label(id_val):
+            c = next((item for item in st.session_state.contacts if item["ID"] == id_val), None)
+            return f"{c['Name']} (ID: {c['ID']})" if c else f"ID: {id_val}"
+        
+        selected_id = st.selectbox(
             "Select the contact to edit:",
-            options=st.session_state.contacts,
-            format_func=lambda c: f"{c['Name']} (ID: {c['ID']})"
+            options=contact_ids,
+            format_func=get_contact_label
         )
         
-        # Using a form to handle text editing without constant page rerunning
+        # Find the actual contact dictionary matching the selected ID
+        contact = next(c for c in st.session_state.contacts if c["ID"] == selected_id)
+        
+        # FIX 2: Added a unique `key` bound to the selected_id so text inputs refresh properly
         with st.form("edit_contact_form"):
-            new_name = st.text_input("Edit Name:", value=contact["Name"])
-            new_phone = st.text_input("Edit Phone Number:", value=contact["Phone"])
+            new_name = st.text_input("Edit Name:", value=contact["Name"], key=f"name_{selected_id}")
+            new_phone = st.text_input("Edit Phone Number:", value=contact["Phone"], key=f"phone_{selected_id}")
             update_btn = st.form_submit_button("Update Contact")
             
             # Input validation before saving the updated record
